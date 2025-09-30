@@ -1,0 +1,18 @@
+# --- Системное ---
+.DS_Store
+Thumbs.db
+
+# --- Obsidian ---
+# кеш, история, локальные состояния — не нужны в git
+.obsidian/workspace.json
+.obsidian/graph.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/obsidian-file-explorer-plus/data.json.bak
+
+# --- Бэкапы редакторов ---
+*.swp
+*.swo
+*~
+
+# --- Логи ---
+*.log
