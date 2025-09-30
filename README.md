@@ -4,12 +4,15 @@
 Здесь собраны материалы по идее, целям, требованиям, архитектуре и процессам разработки.
 ## Структура репозитория
 
-- **00-about/** [[00-about/README|README]]
+- **00-about/** [README](00-about/README.md)
 	 общая информация: команда, идея, цели, elevator pitch 
-- **01-process/** [[01-process/README|README]]
+- **01-process/** [README](01-process/README.md)
 	 процессы разработки: правила веток, коммиты, рабочие практики 
-- **02-architecture/** [[02-architecture/README|README]]
+- **02-architecture/** [README](02-architecture/README.md)
 	 техническая часть: стек технологий, жизненный цикл проекта
-- **03-product/** [[03-product/README|README]]
+- **03-product/** [README](03-product/README.md)
 	 продуктовая часть: требования, дорожная карта
 ---
+
+
+
