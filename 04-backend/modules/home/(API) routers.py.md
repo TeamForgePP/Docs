@@ -174,10 +174,6 @@ schemas → `AuthLoginResponse`
 | 500  | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`                     |
 
 
-
-
-
-
 ## Модуль уведомлений
 
 ### Api route загрузки информации для страницы уведомлений
