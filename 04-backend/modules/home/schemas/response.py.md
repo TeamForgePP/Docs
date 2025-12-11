@@ -15,20 +15,11 @@ class AllowedActions(BaseModel):
 
 class Project(BaseModel):
     id: UUID                 
-    name: str
+    name: str,
     is_complited: bool
     current_sprint_name: str
     current_sprint_seq: int
-    role: Literal[
-        "team_lead",
-        "backend",
-        "frontend",
-        "devops",
-        "manager",
-        "product_manager",
-        "business_analyst",
-        "curator",
-    ]
+    role: List [TeamRole]
     nearest_deadline: date
     sprint_map: List[SprintMap]
     allowed_actions: AllowedActions

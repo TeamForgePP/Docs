@@ -38,6 +38,13 @@
         "type": "FILES",
         "pattern": "03-product/README.md",
         "patternType": "STRICT"
+      },
+      {
+        "name": "",
+        "active": true,
+        "type": "FILES",
+        "pattern": "04-backend/README.md",
+        "patternType": "STRICT"
       }
     ],
     "frontMatter": []

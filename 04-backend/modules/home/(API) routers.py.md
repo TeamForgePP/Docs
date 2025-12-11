@@ -38,10 +38,10 @@
 }
 ```
 
-| code | description    | example                                                                              |
-| ---- | -------------- | ------------------------------------------------------------------------------------ |
-| 401  | unauthorized   | `{ "success": false, "code": "UNAUTHORIZED", "message": "authorization required" }`  |
-| 500  | internal error | `{ "success": false, "code": "INTERNAL_ERROR", "message": "internal server error" }` |
+| code   | description    | example                                                        |
+| ------ | -------------- | -------------------------------------------------------------- |
+| 401    | unauthorized   | `{ "success": false, "message": "требуется авторизация" }`     |
+| 500-ки | internal error | `{ "success": false, "message": "внутренняя ошибка сервера" }` |
 
 
 ---
@@ -74,14 +74,14 @@ response: [schemas → BasicResponse](04-backend/modules/home/schemas/response.p
 }
 ```
 
-| code | description           | example                                                                                |
-| ---- | --------------------- | -------------------------------------------------------------------------------------- |
-| 400  | bad request           | `{ "success": false, "message": "неверные или неполные данные запроса" }`              |
-| 401  | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`                             |
-| 403  | forbidden             | `{ "success": false, "message": "у вас нет прав для создания проекта" }`               |
-| 409  | conflict              | `{ "success": false, "message": "проект с таким названием уже существует" }`           |
-| 422  | unprocessable entity  | `{ "success": false, "message": "ошибка валидации данных или неверный формат ролей" }` |
-| 500  | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`                         |
+| code   | description           | example                                                                                |
+| ------ | --------------------- | -------------------------------------------------------------------------------------- |
+| 400    | bad request           | `{ "success": false, "message": "неверные или неполные данные запроса" }`              |
+| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`                             |
+| 403    | forbidden             | `{ "success": false, "message": "у вас нет прав для создания проекта" }`               |
+| 409    | conflict              | `{ "success": false, "message": "проект с таким названием уже существует" }`           |
+| 422    | unprocessable entity  | `{ "success": false, "message": "ошибка валидации данных или неверный формат ролей" }` |
+| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`                         |
 
 #### Кнопка "удалить":
 `(DELETE) user/home/{project_id}/delete`
@@ -95,12 +95,12 @@ response: [schemas → BasicResponse](04-backend/modules/home/schemas/response.p
 }
 ```
 
-| code | description           | example                                                              |
-| ---- | --------------------- | -------------------------------------------------------------------- |
-| 401  | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`           |
-| 403  | forbidden             | `{ "success": false, "message": "нет прав" }`                        |
-| 404  | not found             | `{ "success": false, "message": "проект не найден или уже удалён" }` |
-| 500  | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`       |
+| code   | description           | example                                                              |
+| ------ | --------------------- | -------------------------------------------------------------------- |
+| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`           |
+| 403    | forbidden             | `{ "success": false, "message": "нет прав" }`                        |
+| 404    | not found             | `{ "success": false, "message": "проект не найден или уже удалён" }` |
+| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`       |
 
 #### Кнопка "покинуть":
 `(POST) user/home/{project_id}/leave`

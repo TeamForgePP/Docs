@@ -2,5 +2,12 @@
   "useMarkdownLinks": true,
   "promptDelete": false,
   "showUnsupportedFiles": false,
-  "alwaysUpdateLinks": true
+  "alwaysUpdateLinks": true,
+  "foldIndent": false,
+  "autoPairBrackets": true,
+  "useTab": true,
+  "smartIndentList": true,
+  "autoPairMarkdown": true,
+  "showLineNumber": false,
+  "strictLineBreaks": false
 }

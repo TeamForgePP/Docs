@@ -1,4 +1,5 @@
-### Для (POST) api/user/home/new-project
+### Для (GET) api/user/profile
+
 ```python
 class TeamRole(Enum): #импортируется из enums.py 
     Backend = "backend"  
@@ -11,14 +12,21 @@ class TeamRole(Enum): #импортируется из enums.py
     TeamLead = "team_lead"
 
 
-class TeamMember(BaseModel):
-    id: UUID
-    roles: List[TeamRole]
+class ProfileResponse(BaseModel):
+    first_name: str
+    last_name: str
+    patronymic: str
+    group: str
+    role: TeamRole
+    email: EmailStr
+```
 
-class CreateProjectRequest(BaseModel):
-    name: str
-    description: Optional[str] = None
-    team: List[TeamMember]
-    git_organization: str
+---
 
+### BasicResponse
+
+```python
+class BasicResponse(BaseModel):
+    success: bool
+    message: str
 ```
