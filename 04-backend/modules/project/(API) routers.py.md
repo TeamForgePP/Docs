@@ -25,18 +25,22 @@
 	reports:[
 		{
 			id: uuid,
-			url: string,
+			file_key: string,
+			view_url: string,
+			status: "uploading" | "ready" | "failed",
+			content_type: string | null,
+			size_bytes: number | null,
 			creator_id: uuid,
-			creator_fn: string, //fn - first name
-			creator_ln: string, //ln - last name
+			creator_fn: string,
+			creator_ln: string,
 			title: string,
-			description: string,
-			teacher_note: string,
+			description: string | null,
+			teacher_note: string | null,
 			edit: {
-				editor_id: uuid,
-				editor_fn: string, //может быть None
-				editor_ln: string, //может быть None
-				updated_at: string, //может быть None
+				editor_id: uuid | null,
+				editor_fn: string | null,
+				editor_ln: string | null,
+				updated_at: string | null
 			}
 		},
 		{
@@ -96,7 +100,7 @@
 
 ---
 
-#### Кнопка **"Добавить отчет"**
+#### Кнопка **"Добавить отчет"** (создать черновик + получить ссылку для загрузки)
 
 `(POST) /api/project/report`
 
@@ -104,24 +108,42 @@
 
 `Cookie: access_token=...`
 
-body (json), schemas → (POST) /api/project/report/new
+body (json):
 
 ```json
 {
-  "project_id": UUID,
-  "title": string,
-  "description": string,
-  "file_url": string
+  "project_id": "UUID",
+  "title": "string",
+  "description": "string | null",
+  "teacher_note": "string | null",
+  "file": {
+    "content_type": "string | null",
+    "size_bytes": "number"
+  }
 }
 ```
 
-response: 
+#### response:
 
-schemas → BasicResponse
 ```json
 {
-  "success": boolean,
-  "message": string
+  "success": true,
+  "message": "string",
+  "report": {
+    "id": "UUID",
+    "file_key": "string",
+    "status": "uploading",
+    "view_url": "string",
+    "upload": {
+      "method": "POST",
+      "url": "string",
+      "fields": {
+        "key": "string",
+        "Content-Type": "string",
+        "...": "..."
+      }
+    }
+  }
 }
 ```
 
@@ -131,19 +153,73 @@ schemas → BasicResponse
 | 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`                |
 | 403    | forbidden             | `{ "success": false, "message": "у вас нет прав для добавления отчета" }` |
 | 404    | not found             | `{ "success": false, "message": "проект не найден" }`                     |
-| 422    | unprocessable entity  | `{ "success": false, "message": "ошибка валидации данных отчета" }`       |
+| 422    | unprocessable entity  | `{ "success": false, "message": "ошибка валидации данных" }`              |
 | 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`            |
-#### Кнопка **"Удалить"** (отчет)
+
+---
+
+#### Загрузка файла (со стороны фронта)
+
+Фронт загружает файл напрямую в MinIO по `report.upload` (presigned POST).
+После успешной загрузки нужно вызвать `finalize`.
+
+---
+
+#### метод **"Finalize"** (подтверждение загрузки файла)
+
+`(POST) /api/project/report/finalize`
+
+#### request:
+
+`Cookie: access_token=...`
+
+body (json):
+
+```json
+{
+  "report_id": "UUID"
+}
+```
+
+#### response:
+
+```json
+{
+  "success": true,
+  "message": "string",
+  "report": {
+    "id": "UUID",
+    "file_key": "string",
+    "status": "ready",
+    "view_url": "string",
+    "content_type": "string | null",
+    "size_bytes": "number | null"
+  }
+}
+```
+
+| code   | description           | example                                                                    |
+| ------ | --------------------- | -------------------------------------------------------------------------- |
+| 400    | bad request           | `{ "success": false, "message": "ошибка проверки файла" }`                 |
+| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`                 |
+| 403    | forbidden             | `{ "success": false, "message": "у вас нет прав для подтверждения отчета" }` |
+| 404    | not found             | `{ "success": false, "message": "отчет не найден" }`                       |
+| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`             |
+
+---
+
+#### Кнопка **"Удалить"** (отчет)
 
 `(DELETE) /api/project/report/{report_id}`
 
 #### request:
 
 `Cookie: access_token=...`
-`report_id` — id отчета, который нужно удалить
-#### response: schemas → BasicResponse
 
-schemas → BasicResponse
+`report_id` — id отчета, который нужно удалить
+
+#### response:
+
 ```json
 {
   "success": boolean,
@@ -158,25 +234,30 @@ schemas → BasicResponse
 | 404    | not found             | `{ "success": false, "message": "отчет не найден или уже удален" }`           |
 | 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`                |
 
-#### Кнопка **"Редактировать"** (отчет)
+---
+
+#### Кнопка **"Редактировать"** (отчет)
 
 `(POST) /api/project/report/edit`
+
 #### request:
+
 `Cookie: access_token=...`
 
-body (json), schemas → (POST) /api/project/report/edit
+body (json):
+
 ```json
 {
-  "report_id": UUID,
-  "project_id": UUID,
-  "title": string,
-  "description": string,
-  "file_url": string
+  "report_id": "UUID",
+  "project_id": "UUID",
+  "title": "string",
+  "description": "string | null",
+  "teacher_note": "string | null"
 }
 ```
-#### response: schemas → BasicResponse
 
-schemas → BasicResponse
+#### response:
+
 ```json
 {
   "success": boolean,
