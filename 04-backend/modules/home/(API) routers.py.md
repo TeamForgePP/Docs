@@ -1,122 +1,239 @@
-## Api route загрузки информации для страницы: 
-## (GET) api/user/home`
+## API: Home (Main / Projects)
 
-#### request:
-	Cookie: access_token=...
-#### response: [schemas → (GET) /api/user/home](04-backend/modules/home/schemas/response.py.md#для-get-apiuserhome)
-```json
-{
-	projects:[
-		{
-			id: uuid,
-			name: string,
-			is_complited: boolean,
-			current_sprint_name: string,
-			current_sprint_seq: number,
-			"roles": [TeamRole],
-			nearest_deadline: string, // YYYY-MM-DD
-			sprint_map:[
-				{
-					id: uuid,
-					name: string,
-					seq: number,
-					deadline: string
-				},
-				{
-					// другие спринты
-				}
-			],
-			allowed_actions:{
-				can_delete: boolean,
-				can_leave: boolean
-			}
-		},
-		{
-			// другие проекты
-		}
-	]
-}
-```
+Ручки страницы **Main**: список проектов, создание проекта, выход из проекта, удаление проекта, а также список пользователей для команды.
 
-| code   | description    | example                                                        |
-| ------ | -------------- | -------------------------------------------------------------- |
-| 401    | unauthorized   | `{ "success": false, "message": "требуется авторизация" }`     |
-| 500-ки | internal error | `{ "success": false, "message": "внутренняя ошибка сервера" }` |
-
+> **Base prefix:** `api` (все пути ниже уже с `api/...`)  
+> Доступ: **user** или **admin** (cookie-based auth).
 
 ---
-### **Дополнительные ручки страницы:**
 
-#### Кнопка "Новый проект":
-`(POST) api/user/home/new-project`
-request:  [schemas → (POST) api/user/home/new-project](04-backend/modules/home/schemas/request.py.md#для-post-apiuserhomenew-project)
+## Auth (для всех ручек)
+
+#### request:
+`Cookie: user_access_token=...` **или** `Cookie: admin_access_token=...`
+
+| code | description  | example |
+| ---- | ------------ | ------- |
+| 401  | unauthorized | `{ "detail": "not authenticated" }` |
+| 401  | unauthorized | `{ "detail": "invalid token" }` |
+| 401  | unauthorized | `{ "detail": "refresh token is not allowed here" }` |
+| 401  | unauthorized | `{ "detail": "token rejected" }` |
+| 401  | unauthorized | `{ "detail": "token missing subject" }` |
+
+---
+
+## Enums
+
+### TeamRole
+- `backend`
+- `business_analyst`
+- `Curator`
+- `devops`
+- `frontend`
+- `manager`
+- `product_manager`
+- `team_lead`
+
+---
+
+## Projects
+
+### Api route создания проекта
+
+### (POST) `api/main`
+
+#### request:
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+schemas → `CreateProjectRequest`  
+`src/modules/home/schemas/home.py`
+
 ```json
 {
-	"name": string,
-	"description": string,
-	"team": [
-		{
-			"id": uuid,
-			"roles": [TramRole]
-	    },
-	    {
-		      // ещё приглашенный участрник
-	    }
-	],
-	"git_organization": string
-}
-```
-response: [schemas → BasicResponse](04-backend/modules/home/schemas/response.py.md#basicresponse)
-```json
-{
-	success: boolean,
-	message: string,
-}
-```
-
-| code   | description           | example                                                                                |
-| ------ | --------------------- | -------------------------------------------------------------------------------------- |
-| 400    | bad request           | `{ "success": false, "message": "неверные или неполные данные запроса" }`              |
-| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`                             |
-| 403    | forbidden             | `{ "success": false, "message": "у вас нет прав для создания проекта" }`               |
-| 409    | conflict              | `{ "success": false, "message": "проект с таким названием уже существует" }`           |
-| 422    | unprocessable entity  | `{ "success": false, "message": "ошибка валидации данных или неверный формат ролей" }` |
-| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`                         |
-
-#### Кнопка "удалить":
-`(DELETE) user/home/{project_id}/delete`
-**request:***
-	`Cookie: access_token=...`
-**response:** [schemas → BasicResponse](04-backend/modules/home/schemas/response.py.md#basicresponse)
-```json
-{
-	success: boolean,
-	message: string,
-}
-```
-
-| code   | description           | example                                                              |
-| ------ | --------------------- | -------------------------------------------------------------------- |
-| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`           |
-| 403    | forbidden             | `{ "success": false, "message": "нет прав" }`                        |
-| 404    | not found             | `{ "success": false, "message": "проект не найден или уже удалён" }` |
-| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`       |
-
-#### Кнопка "покинуть":
-`(POST) user/home/{project_id}/leave`
-**request:***
-	`Cookie: access_token=...`
-**response:** [schemas → BasicResponse](04-backend/modules/home/schemas/response.py.md#basicresponse)
-```json
-{
-	success: boolean,
-	message: string,
+  "name": "string",
+  "description": "string | null",
+  "team": [
+    {
+      "id": "uuid",
+      "roles": ["team_lead", "backend"]
+    }
+  ],
+  "github_url": "string"
 }
 ```
 
-| code | description           | example                                                        |
-| ---- | --------------------- | -------------------------------------------------------------- |
-| 401  | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`     |
-| 403  | forbidden             | `{ "success": false, "message": "нет прав" }`                  |
-| 404  | not found             | `{ "success": false, "message": "проект не найден" }`          |
-| 500  | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }` |
+⚠️Важные правила:
+> - если запрос делает **user** — teamlead это сам пользователь из токена; роль `team_lead` у других участников будет игнорироваться.
+>     
+> - если запрос делает **admin** — в `team` должен быть **ровно один** участник с ролью `team_lead`, иначе будет `400`.
+>     
+
+#### response:
+
+schemas → `BasicResponse`  
+`src/modules/home/schemas/home.py`
+
+```json
+{
+  "success": true,
+  "message": "Project successfully created"
+}
+```
+
+|code|description|example|
+|---|---|---|
+|201|created|`BasicResponse`|
+|400|bad request|`{ "detail": "No team leader in the project" }`|
+|400|bad request|`{ "detail": "Only one teamlead can be in project" }`|
+|401|unauthorized|(см. Auth выше)|
+|422|unprocessable entity|`{ "detail": "Invalid team member id format" }`|
+|422|unprocessable entity|`{ "detail": "Invalid team role format" }`|
+|500|internal error|`{ "detail": "Internal Server Error during project creation" }`|
+
+---
+
+### Api route получения информации для страницы (список проектов)
+
+### (GET) `api/main`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+#### response:
+
+schemas → `ProjectsResponse`  
+`src/modules/home/schemas/home.py`
+
+```json
+{
+  "projects": [
+    {
+      "id": "uuid",
+      "name": "string",
+      "is_completed": false,
+      "current_sprint_name": "string",
+      "current_sprint_seq": 1,
+      "role": ["backend", "team_lead"],
+      "nearest_deadline": "YYYY-MM-DD | null",
+      "sprint_map": [
+        {
+          "id": "uuid",
+          "name": "string",
+          "seq": 1,
+          "active": true,
+          "deadline": "YYYY-MM-DD"
+        }
+      ],
+      "allowed_actions": {
+        "can_delete": true,
+        "can_leave": false
+      }
+    }
+  ]
+}
+
+```
+
+|code|description|example|
+|---|---|---|
+|200|ok|`ProjectsResponse`|
+|401|unauthorized|(см. Auth выше)|
+|500|internal error|`{ "detail": "Internal Server Error during get info" }`|
+
+---
+
+### Api route получения пользователей для команды
+
+### (GET) `api/main/users-for-team`
+
+Используется для подбора участников при создании проекта.
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+#### response:
+
+schemas → `UsersResponse`  
+`src/modules/home/schemas/home.py`
+
+```json
+{
+  "users": [
+    {
+      "id": "uuid",
+      "name": "string",
+      "last_name": "string",
+      "in_team": false
+    }
+  ]
+}
+```
+
+|code|description|example|
+|---|---|---|
+|200|ok|`UsersResponse`|
+|401|unauthorized|(см. Auth выше)|
+|500|internal error|`{ "detail": "Internal Server Error during get users" }`|
+
+---
+
+### Api route покинуть проект
+
+### (POST) `api/main/{project_id}/leave`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`  
+`project_id` — UUID проекта
+
+#### response:
+
+schemas → `BasicResponse`  
+`src/modules/home/schemas/home.py`
+
+```json
+{
+  "success": true,
+  "message": "You left the project successfully"
+}
+```
+
+|code|description|example|
+|---|---|---|
+|200|ok|`BasicResponse`|
+|401|unauthorized|(см. Auth выше)|
+|403|forbidden|`{ "detail": "Teamlead can't leave project" }`|
+|403|forbidden|`{ "detail": "You're not a project member" }`|
+|404|not found|`{ "detail": "Project not found" }`|
+
+---
+
+### Api route удалить проект
+
+### (DELETE) `api/main/{project_id}`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`  
+`project_id` — UUID проекта
+
+#### response:
+
+schemas → `BasicResponse`  
+`src/modules/home/schemas/home.py`
+
+```json
+{
+  "success": true,
+  "message": "Project successfully deleted"
+}
+```
+
+| code | description  | example                                                     |
+| ---- | ------------ | ----------------------------------------------------------- |
+| 200  | ok           | `BasicResponse`                                             |
+| 401  | unauthorized | (см. Auth выше)                                             |
+| 403  | forbidden    | `{ "detail": "Only teamlead or admin can delete project" }` |
+| 404  | not found    | `{ "detail": "Project not found or already deleted" }`      |
