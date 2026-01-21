@@ -1,228 +1,370 @@
-## Api route загрузки информации для страницы (актуальный спринт): 
-## (GET) api/projects/kanban/
+## API: Kanban (доска задач)
+
+Ручки страницы **Kanban**: загрузка данных по задачам (по активному или выбранному спринту), список участников команды, список спринтов, просмотр задачи, создание задачи, обновление статуса.
+
+> **Base prefix:** `api` (все пути ниже уже с `api/...`)  
+> Доступ: **user** или **admin** (cookie-based auth).
+
+---
+
+## Auth (для всех ручек)
 
 #### request:
-	Cookie: access_token=...
-#### response: [schemas → (GET) /api/projects/kanban](04-backend/modules/kanban/schemas/response.py.md#для-get-apiprojetskanban)
+`Cookie: user_access_token=...` **или** `Cookie: admin_access_token=...`
 
+| code | description  | example |
+| ---- | ------------ | ------- |
+| 401  | unauthorized | `{ "detail": "not authenticated" }` |
+| 401  | unauthorized | `{ "detail": "invalid token" }` |
+| 401  | unauthorized | `{ "detail": "refresh token is not allowed here" }` |
+| 401  | unauthorized | `{ "detail": "token rejected" }` |
+| 401  | unauthorized | `{ "detail": "token missing subject" }` |
+
+---
+
+## Enums
+
+### TaskPriority
+- `high`
+- `medium`
+- `Low` *(да, именно так в коде)*
+
+### TaskStatus
+- `TO_DO`
+- `IN_PROGRESS`
+- `IN_REVIEW`
+- `IN_TEST`
+- `DONE`
+
+### TeamRole
+- `backend`
+- `business_analyst`
+- `Curator`
+- `devops`
+- `frontend`
+- `manager`
+- `product_manager`
+- `team_lead`
+
+---
+
+## Schemas
+
+`src/modules/kanban/schemas/kanban.py`
+
+### KanbanResponse
 ```json
 {
   "project": {
-    "id": uuid,
-    "name": string
+    "id": "uuid",
+    "name": "string"
   },
   "selected_sprint": {
-      "id": uuid,
-      "seq": number
+    "id": "uuid",
+    "seq": 1
   },
   "tasks": [
     {
-      "id": uuid,
-      "title": string,
-      "tags": [TeamRole],
-      "status": TaskStatus,
-      "deadline": string, // YYYY-MM-DD
-      "priority": TaskPriority, 
-      "performes": [
-	      {
-	        "id": uuid,
-	        "first_name": string,
-	        "last_name": string,
-	        "avatar_url": string
-	      },
-	      {
-		      //ещё исполнители
-	      }
+      "id": "uuid",
+      "title": "string",
+      "tag": "TeamRole | null",
+      "status": "TaskStatus",
+      "deadline": "YYYY-MM-DD",
+      "priority": "TaskPriority",
+      "performers": [
+        {
+          "id": "uuid",
+          "first_name": "string",
+          "last_name": "string",
+          "avatar_url": "string"
+        }
       ],
-      "key": string,
-    },
-    {
-	    //ещё таски
+      "key": "string"
     }
   ]
 }
 ```
 
-| code   | description    | example                                                       |
-| ------ | -------------- | ------------------------------------------------------------- |
-| 401    | unauthorized   | `{ "success": false, "message": "authorization required" }`   |
-| 500-ки | internal error | ` "success": false, "message": "внутренняя ошибка сервера" }` |
-
-# Ручка на получение тасок по конкретному спринту
-## (GET) api/projects/kanban/{sprint_id}
-
-#### request:
-	Cookie: access_token=...
-#### response: [schemas → (GET) /api/projects/kanban](04-backend/modules/kanban/schemas/response.py.md#для-get-apiprojetskanban)
-
-```json
-{
-  "project": {
-    "id": uuid,
-    "name": string
-  },
-  "selected_sprint": {
-      "id": uuid,
-      "seq": number
-  },
-  "tasks": [
-    {
-      "id": uuid,
-      "title": string,
-      "tags": [TeamRole],
-      "status": TaskStatus,
-      "deadline": string, // YYYY-MM-DD
-      "priority": TaskPriority, 
-      "performes": [
-	      {
-	        "id": uuid,
-	        "first_name": string,
-	        "last_name": string,
-	        "avatar_url": string
-	      },
-	      {
-		      //ещё исполнители
-	      }
-      ],
-      "key": string,
-    },
-    {
-	    //ещё таски
-    }
-  ]
-}
-```
-
-| code | description    | example                                                        |
-| ---- | -------------- | -------------------------------------------------------------- |
-| 401  | unauthorized   | `{ "success": false, "message": "требуется авторизация" }`     |
-| 500  | internal error | `{ "success": false, "message": "внутренняя ошибка сервера" }` |
-
-
-### **Дополнительные ручки страницы:**
-
-#### Кнопка "Новая задача"
-`(POST) api/projects/kanban/new-task
-request:  [schemas → (POST) api/projects/kanban/new-task](04-backend/modules/kanban/schemas/request.py.md#для-apiprojectskanbannew-task)
-
-```json
-{
-  "title": string,
-  "description": string,
-  "performes": [
-	  {
-		  	"id": uuid,
-	  },
-	  {
-		  //ещё исполнитель
-	  }
-  ],
-  "priority": TaskPriority, 
-  "deadline": string, // YYYY-MM-DD
-}
-```
-response: [schemas → BasicResponse](04-backend/modules/kanban/schemas/response.py.md#basicresponse)
-```json
-{
-	success: boolean,
-	message: string,
-}
-```
-
-| code   | description           | example                                                          |
-| ------ | --------------------- | ---------------------------------------------------------------- |
-| 201    | created               | `{ "success": true, "message": "задача успешно создана" }`       |
-| 400    | bad request           | `{ "success": false, "message": "ошибка валидации данных" }`     |
-| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`       |
-| 403    | forbidden             | `{ "success": false, "message": "нет прав на создание задачи" }` |
-| 404    | not found             | `{ "success": false, "message": "указанный user не найден" }`    |
-| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`   |
-
-#### Ручка для получения всех участников команды
-`(GET) api/projects/kanban/team-members
-
-#### request:
-	Cookie: access_token=...
-#### response: [schemas → (GET) /api/projects/kanban/team-members](04-backend/modules/kanban/schemas/response.py.md#для-get-apiprojetskanbanteam-members)
+### MembersResponse
 
 ```json
 {
   "members": [
     {
-      "id": uuid,
-      "first_name": string,
-      "last_name": string,
-      "avatar_url": string
+      "id": "uuid",
+      "first_name": "string",
+      "last_name": "string",
+      "avatar_url": "string"
     }
   ]
 }
 ```
 
-| code   | description           | example                                                                                 |
-| ------ | --------------------- | --------------------------------------------------------------------------------------- |
-| 200    | OK                    | `{ "success": true, message": "список участников успешно получен" }`                    |
-| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`                              |
-| 403    | forbidden             | `{ "success": false, "message": "недостаточно прав для просмотра участников команды" }` |
-| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`                          |
+### SprintsResponse
 
-#### Ручка для просмотра задачи
-`(GET) api/projects/kanban/{task_id}
+```json
+{
+  "number": 3,
+  "sprints": [
+    {
+      "id": "uuid",
+      "label": "1 — Sprint name"
+    }
+  ]
+}
+```
+
+### TaskResponse
+
+```json
+{
+  "id": "uuid",
+  "title": "string",
+  "description": "string",
+  "performers": [
+    {
+      "id": "uuid",
+      "first_name": "string",
+      "last_name": "string",
+      "avatar_url": "string"
+    }
+  ],
+  "priority": "TaskPriority",
+  "deadline": "YYYY-MM-DD",
+  "tag": "TeamRole | null",
+  "key": "string"
+}
+```
+
+### NewTaskRequest
+
+```json
+{
+  "sprint_id": "uuid | null",
+  "title": "string",
+  "description": "string",
+  "performers": [
+    { "id": "uuid" }
+  ],
+  "priority": "TaskPriority",
+  "deadline": "YYYY-MM-DD",
+  "tag": "TeamRole | null"
+}
+```
+
+### UpdateStatusRequest
+
+```json
+{
+  "task_id": "uuid",
+  "status": "TaskStatus"
+}
+```
+
+### BasicResponse
+
+```json
+{
+  "success": true,
+  "message": "string"
+}
+```
+
+---
+
+## Kanban
+
+### Api route загрузки информации для страницы (активный спринт)
+
+### (GET) `api/kanban`
 
 #### request:
-	Cookie: access_token=...
-#### response: [schemas → (GET) /api/projects/kanban/{task_id}](04-backend/modules/kanban/schemas/response.py.md#для-get-apiprojetskanbantask-id)
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+#### response:
+
+schemas → `KanbanResponse`  
+`src/modules/kanban/schemas/kanban.py`
+
+|code|description|example|
+|---|---|---|
+|200|ok|`KanbanResponse`|
+|401|unauthorized|(см. Auth выше)|
+|404|not found|`{ "detail": "Project not found" }`|
+|404|not found|`{ "detail": "Projects not found" }`|
+|404|not found|`{ "detail": "Active sprint not found" }`|
+|500|internal error|`{ "detail": "Internal Server Error during get info" }`|
+
+---
+
+### Api route получения тасок по конкретному спринту
+
+### (GET) `api/kanban/sprints/{sprint_id}`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`  
+`sprint_id` — UUID спринта
+
+#### response:
+
+schemas → `KanbanResponse`  
+`src/modules/kanban/schemas/kanban.py`
+
+|code|description|example|
+|---|---|---|
+|200|ok|`KanbanResponse`|
+|401|unauthorized|(см. Auth выше)|
+|404|not found|`{ "detail": "Sprint not found" }`|
+|404|not found|`{ "detail": "Project not found" }`|
+|404|not found|`{ "detail": "Projects not found" }`|
+|500|internal error|`{ "detail": "Internal Server Error during get info" }`|
+
+---
+
+### Api route получения списка спринтов (для выбора в UI)
+
+### (GET) `api/kanban/sprints`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+#### response:
+
+schemas → `SprintsResponse`  
+`src/modules/kanban/schemas/kanban.py`
+
+|code|description|example|
+|---|---|---|
+|200|ok|`SprintsResponse`|
+|401|unauthorized|(см. Auth выше)|
+|404|not found|`{ "detail": "Project not found" }`|
+|404|not found|`{ "detail": "Projects not found" }`|
+|500|internal error|`{ "detail": "Internal Server Error during get info" }`|
+
+---
+
+### Api route получения всех участников команды
+
+### (GET) `api/kanban/team-members`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+#### response:
+
+schemas → `MembersResponse`  
+`src/modules/kanban/schemas/kanban.py`
+
+|code|description|example|
+|---|---|---|
+|200|ok|`MembersResponse`|
+|401|unauthorized|(см. Auth выше)|
+|404|not found|`{ "detail": "Project not found" }`|
+|404|not found|`{ "detail": "Projects not found" }`|
+|500|internal error|`{ "detail": "Internal Server Error during get info" }`|
+
+---
+
+### Api route просмотра задачи
+
+### (GET) `api/kanban/tasks/{task_id}`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`  
+`task_id` — UUID задачи
+
+#### response:
+
+schemas → `TaskResponse`  
+`src/modules/kanban/schemas/kanban.py`
+
+|code|description|example|
+|---|---|---|
+|200|ok|`TaskResponse`|
+|401|unauthorized|(см. Auth выше)|
+|404|not found|`{ "detail": "Task not found" }`|
+|500|internal error|`{ "detail": "Internal Server Error during get info" }`|
+
+---
+
+### Api route создания новой задачи
+
+### (POST) `api/kanban/new-task`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+schemas → `NewTaskRequest`  
+`src/modules/kanban/schemas/kanban.py`
+
+> Если `sprint_id` **не указан**, задача будет создана:
+> 
+> - в **активном** спринте проекта (если есть),
+>     
+> - иначе — в **первом будущем** спринте,
+>     
+> - если спринтов нет — будет `404`.
+>     
+
+#### response:
+
+schemas → `BasicResponse`  
+`src/modules/kanban/schemas/kanban.py`
 
 ```json
 {
-  "id": uuid,
-  "title": string,
-  "description": string,
-  "user": {
-    "id": uuid,
-    "first_name": string,
-    "last_name": string,
-    "avatar_url": string
-  },
-  "priority": ["high" | "medium" | "low"], 
-  "deadline": string, // YYYY-MM-DD
+  "success": true,
+  "message": "Task successfully created"
 }
 ```
 
-| code   | description           | example                                                        |
-| ------ | --------------------- | -------------------------------------------------------------- |
-| 200    | OK                    | `{ "success": true, "message": "задача успешно получена" }`    |
-| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`     |
-| 403    | forbidden             | `{ "success": false, "message": "доступ к задаче запрещен }`   |
-| 404    | not found             | `{ "success": false, "message": "задача не найдена" }`         |
-| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }` |
+|code|description|example|
+|---|---|---|
+|201|created|`BasicResponse`|
+|401|unauthorized|(см. Auth выше)|
+|400|bad request|`{ "detail": "Sprint doesn't belong to project" }`|
+|404|not found|`{ "detail": "Project not found" }`|
+|404|not found|`{ "detail": "Projects not found" }`|
+|404|not found|`{ "detail": "Sprint not found" }`|
+|404|not found|`{ "detail": "Sprint not found in project" }`|
+|404|not found|`{ "detail": "Sprints not exist" }`|
+|422|unprocessable entity|`{ "detail": "Invalid sprint_id format" }`|
+|500|internal error|`{ "detail": "Internal Server Error during task creation" }`|
 
-#### Ручка для обновления статуса задачи
-`(POST) api/projects/kanban/update-status
-request:  [schemas → (POST) api/projects/kanban/update-status](04-backend/modules/kanban/schemas/request.py.md#для-apiprojectskanbanupdate-status)
+---
+
+### Api route обновления статуса задачи
+
+### (POST) `api/kanban/update-status`
+
+#### request:
+
+`Cookie: user_access_token=...` или `Cookie: admin_access_token=...`
+
+schemas → `UpdateStatusRequest`  
+`src/modules/kanban/schemas/kanban.py`
+
+#### response:
+
+schemas → `BasicResponse`  
+`src/modules/kanban/schemas/kanban.py`
 
 ```json
 {
-  "task_id": uuid,
-  "status": TaskStatus
+  "success": true,
+  "message": "Task status updated successfully"
 }
 ```
 
-response: [schemas → BasicResponse](04-backend/modules/kanban/schemas/response.py.md#basicresponse)
-```json
-{
-	success: boolean,
-	message: string,
-}
-```
-
-| code   | description           | example                                                                   |
-| ------ | --------------------- | ------------------------------------------------------------------------- |
-| 200    | OK                    | `{ "success": true, "message": "статус задачи успешно обновлен" }`        |
-| 400    | bad request           | `{ "success": false, "message": "ошибка валидации данных" }`              |
-| 401    | unauthorized          | `{ "success": false, "message": "требуется авторизация" }`                |
-| 403    | forbidden             | `{ "success": false, "message": "нет прав на изменение статуса задачи" }` |
-| 404    | not found             | `{ "success": false, "message": "указанный user не найден" }`             |
-| 500-ки | internal server error | `{ "success": false, "message": "внутренняя ошибка сервера" }`            |
-|        |                       |                                                                           |
-
-==ручка на обновление всей задачи==
+|code|description|example|
+|---|---|---|
+|200|ok|`BasicResponse`|
+|401|unauthorized|(см. Auth выше)|
+|422|unprocessable entity|(ошибка валидации тела запроса)|
+|500|internal error|`{ "detail": "Internal Server Error during update status" }`|
