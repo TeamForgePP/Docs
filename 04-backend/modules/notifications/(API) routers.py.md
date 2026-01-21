@@ -5,7 +5,6 @@
 #### request:
 
 `Cookie: access_token=...`
-
 #### response:
 
 schemas → `NotificationsResponse`  
