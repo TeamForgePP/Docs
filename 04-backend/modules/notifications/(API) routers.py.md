@@ -39,7 +39,7 @@ schemas → `NotificationsResponse`
 
 #### Кнопка «Отметить всё прочитанным»
 
-`(PATCH) api/notifications/read-all`
+### (PATCH) api/notifications/read-all
 
 **request:**  
 `Cookie: access_token=...`
